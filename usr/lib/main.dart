@@ -39,8 +39,8 @@ class BakeryShopPage extends StatefulWidget {
 }
 
 class _BakeryShopPageState extends State<BakeryShopPage> {
-  // State for the shopping cart
-  final List<Product> _cart = [];
+  // State for the shopping cart (productId, quantity)
+  final Map<int, int> _cart = {};
 
   // List of available products
   final List<Product> _products = [
@@ -50,11 +50,32 @@ class _BakeryShopPageState extends State<BakeryShopPage> {
     Product(id: 4, name: "Croissant", price: 20000, icon: Icons.brunch_dining),
   ];
 
-  // Function to add a product to the cart
-  void _addToCart(Product product) {
+  // Function to increment a product in the cart
+  void _incrementCart(Product product) {
     setState(() {
-      _cart.add(product);
+      _cart.update(product.id, (value) => value + 1, ifAbsent: () => 1);
     });
+  }
+
+  // Function to decrement a product from the cart
+  void _decrementCart(Product product) {
+    setState(() {
+      if (_cart.containsKey(product.id)) {
+        if (_cart[product.id]! > 1) {
+          _cart.update(product.id, (value) => value - 1);
+        } else {
+          _cart.remove(product.id);
+        }
+      }
+    });
+  }
+
+  // Calculate total items in the cart
+  int get _totalCartItems {
+    if (_cart.isEmpty) {
+      return 0;
+    }
+    return _cart.values.reduce((sum, item) => sum + item);
   }
 
   @override
@@ -68,32 +89,39 @@ class _BakeryShopPageState extends State<BakeryShopPage> {
         itemCount: _products.length,
         itemBuilder: (context, index) {
           final product = _products[index];
+          final quantity = _cart[product.id] ?? 0;
           return Card(
             margin: const EdgeInsets.all(8.0),
             elevation: 6.0,
-            child: InkWell(
-              onTap: () => _addToCart(product),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Icon(product.icon, size: 50, color: Colors.brown),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(product.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text("Rp${product.price}"),
-                        ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(product.icon, size: 50, color: Colors.brown),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(product.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text("Rp${product.price}"),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: quantity > 0 ? () => _decrementCart(product) : null,
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _addToCart(product),
-                      child: const Text("Tambah"),
-                    ),
-                  ],
-                ),
+                      Text('$quantity', style: const TextStyle(fontSize: 18)),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () => _incrementCart(product),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           );
@@ -103,7 +131,7 @@ class _BakeryShopPageState extends State<BakeryShopPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            "Keranjang: ${_cart.length} item",
+            "Keranjang: $_totalCartItems item",
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ),
